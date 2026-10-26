@@ -1,0 +1,100 @@
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+  tomcat:
+    max-swallow-size: 50MB
+
+spring:
+  application:
+    name: meiye-saas
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+  servlet:
+    multipart:
+      max-file-size: 30MB
+      max-request-size: 100MB
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${DB_NAME:meiye}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: MeiyeHikariPool
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 200
+          max-idle: 20
+          min-idle: 5
+  rabbitmq:
+    host: ${RABBIT_HOST:127.0.0.1}
+    port: ${RABBIT_PORT:5672}
+    username: ${RABBIT_USER:guest}
+    password: ${RABBIT_PASSWORD:guest}
+    virtual-host: ${RABBIT_VHOST:/}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 2000ms
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+    default-enum-type-handler: org.apache.ibatis.type.EnumTypeHandler
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath*:/mapper/**/*.xml
+
+meiye:
+  jwt:
+    secret: ${JWT_SECRET:please-change-this-jwt-secret-at-least-32-chars}
+    expire-hours: ${JWT_EXPIRE_HOURS:24}
+  data:
+    aes-key: ${DATA_AES_KEY:MeiyeDataAesKey2026!}
+  storage:
+    local-dir: ${STORAGE_LOCAL_DIR:./data/uploads}
+    public-base: ${STORAGE_PUBLIC_BASE:/api/files}
+  minio:
+    endpoint: http://${MINIO_HOST:172.16.28.201}:${MINIO_PORT:9000}
+    access-key: ${MINIO_USER:admin}
+    secret-key: ${MINIO_PASSWORD:}
+    bucket: ${MINIO_BUCKET:meiye}
+  wechat:
+    mock: ${WECHAT_MOCK:true}
+  backup:
+    dir: ${BACKUP_DIR:./data/backup}
+
+logging:
+  level:
+    root: INFO
+    com.meiye: INFO
+    org.springframework.security: WARN
+  file:
+    name: ${LOG_FILE:./data/logs/meiye.log}

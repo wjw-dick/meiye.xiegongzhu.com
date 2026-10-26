@@ -1,0 +1,73 @@
+<view>
+  <view class="hero">
+    <view class="row between">
+      <view class="row" bindtap="goMine">
+        <view class="avatar">{{customer.name ? customer.name[0] : '会'}}</view>
+        <view style="margin-left:20rpx">
+          <view class="hero-title">Hi，{{customer.name || '会员'}}</view>
+          <view class="hero-sub">{{customer.level || '普通会员'}} · 成长值 {{customer.growth || 0}}</view>
+        </view>
+      </view>
+      <view class="pill" style="background:rgba(255,255,255,.2);color:#fff">会员</view>
+    </view>
+    <view class="hero-stats">
+      <view class="hero-stat"><view class="num">{{customer.points || 0}}</view><view class="label">积分</view></view>
+      <view class="hero-stat"><view class="num">{{cards.length}}</view><view class="label">会员卡</view></view>
+      <view class="hero-stat"><view class="num">{{coupons.length}}</view><view class="label">优惠券</view></view>
+    </view>
+  </view>
+
+  <view class="container" style="padding-top:0">
+    <view class="card" style="margin-top:-60rpx;position:relative;z-index:2">
+      <view class="row between" style="margin-bottom:18rpx">
+        <view class="bold">快捷服务</view>
+        <view class="sec-more" data-url="/pages/items/index" bindtap="go">全部项目 ›</view>
+      </view>
+      <view class="grid4">
+        <view class="quick" wx:for="{{quick}}" wx:key="label" data-url="{{item.url}}" bindtap="go">
+          <view class="quick-icon">{{item.icon}}</view>
+          <view>{{item.label}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{loading}}" class="loading">加载中…</view>
+    <view wx:elif="{{error}}" class="empty">{{error}}</view>
+    <block wx:else>
+      <view wx:if="{{appointments.length}}">
+        <view class="sec-head"><view class="sec-title">即将到来</view><view class="sec-more" bindtap="goOrders">全部</view></view>
+        <view class="card" wx:for="{{appointments}}" wx:key="id" bindtap="goOrders">
+          <view class="row between"><view class="bold small">{{item.startTime}}</view><view class="pill">{{item.status}}</view></view>
+          <view class="tiny muted" style="margin-top:6rpx">预约号 {{item.appointmentNo}}</view>
+        </view>
+      </view>
+
+      <view class="sec-head"><view class="sec-title">臻选项目</view><view class="sec-more" data-url="/pages/items/index" bindtap="go">更多</view></view>
+      <view class="item" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="goItem">
+        <image wx:if="{{item.image}}" class="item-img" src="{{item.image}}" mode="aspectFill" />
+        <view wx:else class="item-img"></view>
+        <view class="item-main">
+          <view class="row between"><view class="item-title">{{item.name}}</view><view class="pill">{{item.bizType}}</view></view>
+          <view class="item-desc">{{item.description || '专业服务'}}</view>
+          <view class="row between" style="margin-top:10rpx">
+            <view class="price">¥{{item.price}}</view>
+            <view class="tiny muted">{{item.duration}} 分钟</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="sec-head"><view class="sec-title">会员卡包</view><view class="sec-more" data-url="/pages/cards/index" bindtap="go">全部</view></view>
+      <view wx:if="{{!cards.length}}" class="card muted small">暂无会员卡，到店可咨询办理。</view>
+      <view class="card" wx:for="{{cards}}" wx:key="id" data-url="/pages/cards/index" bindtap="go">
+        <view class="row between"><view class="bold">{{item.name}}</view><view class="pill">{{item.type === 'TIMES' ? '次卡' : '储值卡'}}</view></view>
+        <view class="row between tiny muted" style="margin-top:8rpx"><view>卡号 {{item.cardNo}}</view><view>余额 ¥{{item.balance}} / {{item.times || 0}} 次</view></view>
+      </view>
+
+      <view class="sec-head" wx:if="{{notices.length}}"><view class="sec-title">门店公告</view></view>
+      <view class="card" wx:for="{{notices}}" wx:key="id">
+        <view class="bold small">{{item.title}}</view>
+        <view class="tiny muted" style="margin-top:4rpx">{{item.summary}}</view>
+      </view>
+    </block>
+  </view>
+</view>

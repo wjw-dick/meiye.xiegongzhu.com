@@ -1,0 +1,69 @@
+# ===== 依赖 =====
+node_modules/
+.pnpm-store/
+
+# ===== 构建产物 =====
+dist/
+build/
+target/
+out/
+.vite/
+.cache/
+*.class
+
+# ===== 环境变量与密钥（禁止提交）=====
+.env
+.env.*
+.env.local
+google.txt
+*.pem
+*.key
+*.p12
+*.jks
+deploy/env/meiye.env
+
+# 模板文件需要提交
+!deploy/env/meiye.env.example
+!**/.env.example
+
+# ===== 运行时数据与日志 =====
+backend/data/
+logs/
+*.log
+*.log.*.gz
+nohup.out
+*.pid
+
+# ===== IDE / 操作系统 =====
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# ===== 测试与覆盖率 =====
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# ===== Flutter / Dart =====
+app-flutter/.dart_tool/
+app-flutter/build/
+app-flutter/.flutter-plugins
+app-flutter/.flutter-plugins-dependencies
+app-flutter/.packages
+app-flutter/ios/Pods/
+app-flutter/ios/.symlinks/
+app-flutter/android/.gradle/
+app-flutter/android/local.properties
+
+# ===== 小程序私有配置 =====
+project.private.config.json
+miniprogram/project.private.config.json
+worker-miniprogram/project.private.config.json
+
+# ===== 临时文件 =====
+tmp/
+*.tmp
+*.swp

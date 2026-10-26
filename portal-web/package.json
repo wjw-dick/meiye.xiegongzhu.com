@@ -1,0 +1,23 @@
+{
+  "name": "meiye-portal",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5174",
+    "build": "vite build",
+    "build:only": "vite build",
+    "preview": "vite preview --port 4174",
+    "typecheck": "vue-tsc --noEmit || true"
+  },
+  "dependencies": {
+    "vue": "^3.4.27",
+    "vue-router": "^4.3.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.6.2",
+    "typescript": "^5.3.3",
+    "vite": "^4.5.3",
+    "vue-tsc": "^1.8.27"
+  }
+}

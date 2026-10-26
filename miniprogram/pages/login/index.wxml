@@ -1,0 +1,24 @@
+<view class="login-wrap">
+  <view class="login-logo">美</view>
+  <view class="login-title">会员中心</view>
+  <view class="login-sub">预约服务 · 卡包权益 · 积分好礼</view>
+  <view class="login-card">
+    <view class="field">
+      <view class="field-label">门店编码</view>
+      <input class="input" value="{{tenantCode}}" data-field="tenantCode" bindinput="onInput" placeholder="如 5MY" />
+    </view>
+    <view class="field">
+      <view class="field-label">手机号</view>
+      <input class="input" type="number" maxlength="11" value="{{phone}}" data-field="phone" bindinput="onInput" placeholder="请输入手机号" />
+    </view>
+    <view class="field">
+      <view class="field-label">密码</view>
+      <input class="input" password value="{{password}}" data-field="password" bindinput="onInput" placeholder="请输入密码" />
+    </view>
+    <view class="error" wx:if="{{error}}">{{error}}</view>
+    <button class="btn" loading="{{loading}}" bindtap="login">登录</button>
+    <button class="btn ghost" style="margin-top:20rpx" loading="{{wxLoading}}" bindtap="wxLogin">微信一键登录</button>
+    <view class="small muted" style="text-align:center;margin-top:24rpx" bindtap="demo">演示账号：13700000001 / 123456（点击填入）</view>
+  </view>
+  <view class="tiny muted" style="text-align:center;margin-top:32rpx">登录即代表同意《会员服务协议》与《隐私政策》</view>
+</view>

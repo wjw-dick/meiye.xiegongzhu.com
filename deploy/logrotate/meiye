@@ -1,0 +1,16 @@
+/opt/meiye/logs/*.log {
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    dateext
+    dateformat -%Y%m%d
+    su meiye meiye
+    postrotate
+        # 后端使用 logback 输出，copytruncate 无需重载；Nginx 日志见系统 logrotate
+        true
+    endscript
+}

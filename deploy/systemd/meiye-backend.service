@@ -1,0 +1,53 @@
+[Unit]
+Description=Meiye SaaS Backend (Spring Boot 3 / Java 17)
+Documentation=https://api.example.com/api/health
+After=network-online.target mysql.service redis.service rabbitmq-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=meiye
+Group=meiye
+WorkingDirectory=/opt/meiye
+EnvironmentFile=/etc/meiye/meiye.env
+Environment=JAVA_HOME=/usr/lib/jvm/java-17-openjdk
+Environment=TZ=Asia/Shanghai
+
+ExecStart=/usr/lib/jvm/java-17-openjdk/bin/java \
+  -server \
+  -Xms512m -Xmx2048m \
+  -XX:+UseG1GC \
+  -XX:MaxGCPauseMillis=200 \
+  -XX:+HeapDumpOnOutOfMemoryError \
+  -XX:HeapDumpPath=/opt/meiye/data/logs \
+  -Djava.security.egd=file:/dev/./urandom \
+  -Duser.timezone=Asia/Shanghai \
+  -jar /opt/meiye/app/meiye-backend.jar
+
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=40
+KillSignal=SIGTERM
+SuccessExitStatus=143
+
+LimitNOFILE=65535
+LimitNPROC=4096
+
+# 安全加固
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/meiye/data /opt/meiye/logs
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+StandardOutput=append:/opt/meiye/logs/stdout.log
+StandardError=append:/opt/meiye/logs/stderr.log
+
+[Install]
+WantedBy=multi-user.target

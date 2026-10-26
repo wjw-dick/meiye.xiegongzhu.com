@@ -1,0 +1,35 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/appointments/index",
+    "pages/orders/index",
+    "pages/performance/index",
+    "pages/mine/index",
+    "pages/logs/index",
+    "pages/messages/index",
+    "pages/password/index",
+    "pages/login/index"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#1f6f68",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "技师工作台",
+    "backgroundColor": "#f6faf9",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#93a19e",
+    "selectedColor": "#1f6f68",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "工作台" },
+      { "pagePath": "pages/appointments/index", "text": "预约" },
+      { "pagePath": "pages/orders/index", "text": "核销" },
+      { "pagePath": "pages/mine/index", "text": "我的" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

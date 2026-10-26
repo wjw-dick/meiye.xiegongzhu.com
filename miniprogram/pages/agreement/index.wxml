@@ -1,0 +1,10 @@
+<view class="container">
+  <view class="card" wx:if="{{type === 'privacy'}}">
+    <view class="bold" style="margin-bottom:12rpx">隐私政策</view>
+    <view class="small" style="line-height:1.8">我们仅在提供预约、会员与支付服务所必需的范围内收集和使用你的个人信息，包括手机号、服务记录与消费记录。敏感信息加密存储，展示时脱敏。未经授权不会向第三方提供，法律法规另有规定的除外。你可随时联系门店查询、更正或删除个人信息。</view>
+  </view>
+  <view class="card" wx:else>
+    <view class="bold" style="margin-bottom:12rpx">会员服务协议</view>
+    <view class="small" style="line-height:1.8">1. 会员账户仅限本人使用，请妥善保管密码。\n2. 预约成功后请按时到店，迟到超过 15 分钟门店有权调整服务时间。\n3. 会员卡、优惠券以页面展示的有效期与使用规则为准。\n4. 服务过程中如有不适请立即告知技师。\n5. 本协议未尽事宜以门店公示及法律法规为准。</view>
+  </view>
+</view>

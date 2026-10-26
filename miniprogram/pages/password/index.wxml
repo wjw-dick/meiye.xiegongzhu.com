@@ -1,0 +1,18 @@
+<view class="container">
+  <view class="card">
+    <view class="field">
+      <view class="field-label">原密码</view>
+      <input class="input" password value="{{oldPassword}}" data-field="oldPassword" bindinput="onInput" placeholder="请输入原密码" />
+    </view>
+    <view class="field">
+      <view class="field-label">新密码</view>
+      <input class="input" password value="{{newPassword}}" data-field="newPassword" bindinput="onInput" placeholder="至少 6 位" />
+    </view>
+    <view class="field">
+      <view class="field-label">确认新密码</view>
+      <input class="input" password value="{{confirmPassword}}" data-field="confirmPassword" bindinput="onInput" placeholder="再次输入新密码" />
+    </view>
+    <view class="error" wx:if="{{error}}">{{error}}</view>
+    <button class="btn" disabled="{{busy}}" bindtap="submit">{{busy ? '提交中…' : '确认修改'}}</button>
+  </view>
+</view>

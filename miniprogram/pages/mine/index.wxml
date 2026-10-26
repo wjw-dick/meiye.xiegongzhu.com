@@ -1,0 +1,82 @@
+<view>
+  <view class="hero">
+    <view class="row">
+      <view class="avatar">{{customer.name ? customer.name[0] : '会'}}</view>
+      <view style="margin-left:20rpx">
+        <view class="hero-title">{{customer.name || '会员'}}</view>
+        <view class="hero-sub">{{customer.level || '普通会员'}} · {{customer.customerNo}}</view>
+      </view>
+    </view>
+    <view class="hero-stats">
+      <view class="hero-stat"><view class="num">{{customer.points || 0}}</view><view class="label">积分</view></view>
+      <view class="hero-stat"><view class="num">{{cards.length}}</view><view class="label">会员卡</view></view>
+      <view class="hero-stat"><view class="num">{{customer.growth || 0}}</view><view class="label">成长值</view></view>
+    </view>
+  </view>
+
+  <view class="container" style="padding-top:24rpx">
+    <view class="tabs">
+      <view class="tab {{tab === 'menu' ? 'on' : ''}}" data-tab="menu" bindtap="setTab">我的服务</view>
+      <view class="tab {{tab === 'coupon' ? 'on' : ''}}" data-tab="coupon" bindtap="setTab">优惠券</view>
+      <view class="tab {{tab === 'point' ? 'on' : ''}}" data-tab="point" bindtap="setTab">积分</view>
+    </view>
+
+    <block wx:if="{{tab === 'menu'}}">
+      <view class="menu-list">
+        <view class="menu-item" data-url="/pages/cards/index" bindtap="go"><view><text class="menu-icon">▣</text>会员卡包</view><text>›</text></view>
+        <view class="menu-item" data-url="/pages/order/index" bindtap="go"><view><text class="menu-icon">☰</text>我的订单</view><text>›</text></view>
+        <view class="menu-item" data-url="/pages/appointment/index" bindtap="go"><view><text class="menu-icon">◷</text>我的预约</view><text>›</text></view>
+        <view class="menu-item" data-url="/pages/messages/index" bindtap="go"><view><text class="menu-icon">✉</text>消息中心</view><text>›</text></view>
+        <view class="menu-item" data-url="/pages/password/index" bindtap="go"><view><text class="menu-icon">⚿</text>修改密码</view><text>›</text></view>
+      </view>
+
+      <view class="menu-list">
+        <view class="menu-item" data-type="privacy" bindtap="showAgreement"><view><text class="menu-icon">◈</text>隐私政策</view><text>›</text></view>
+        <view class="menu-item" data-type="service" bindtap="showAgreement"><view><text class="menu-icon">▤</text>会员服务协议</view><text>›</text></view>
+        <view class="menu-item" bindtap="toggleLang"><view><text class="menu-icon">文</text>语言 / Language</view><text>{{lang === 'zh' ? '简体中文' : 'English'}} ›</text></view>
+      </view>
+
+      <button class="btn gray" bindtap="logout">退出登录</button>
+      <view class="tiny muted" style="text-align:center;margin-top:20rpx">门店编码 {{tenantCode}} · v1.0.0</view>
+    </block>
+
+    <block wx:elif="{{tab === 'coupon'}}">
+      <view wx:if="{{!coupons.length}}" class="empty">暂无优惠券</view>
+      <view class="coupon" wx:for="{{coupons}}" wx:key="id">
+        <view class="coupon-left">
+          <view class="amount">{{item.type === 'CASH' ? '¥' + item.amount : (item.discount ? item.discount / 10 + '折' : '优惠')}}</view>
+          <view class="tiny">{{item.minAmount ? '满' + item.minAmount + '可用' : '无门槛'}}</view>
+        </view>
+        <view class="coupon-right">
+          <view class="bold small">{{item.name}}</view>
+          <view class="tiny muted" style="margin-top:6rpx">有效期至 {{item.expireAt}}</view>
+          <view class="pill" style="margin-top:8rpx">{{item.status === 'UNUSED' ? '可使用' : item.status === 'USED' ? '已使用' : '已过期'}}</view>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="card" style="text-align:center;padding:40rpx">
+        <view class="small muted">可用积分</view>
+        <view style="font-size:64rpx;font-weight:800;color:#b4235a">{{points.balance || 0}}</view>
+        <view class="tiny muted">100 积分可抵 1 元</view>
+      </view>
+      <view class="sec-head"><view class="sec-title">积分明细</view></view>
+      <view wx:if="{{!points.records.length}}" class="empty">暂无积分记录</view>
+      <view class="card" wx:for="{{points.records}}" wx:key="id">
+        <view class="row between">
+          <view><view class="small">{{item.remark || item.type}}</view><view class="tiny muted">{{item.createdAt}}</view></view>
+          <view class="bold" style="color:{{item.points >= 0 ? '#178a52' : '#c22f4a'}}">{{item.points > 0 ? '+' : ''}}{{item.points}}</view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view wx:if="{{agreements.show}}" class="mask" bindtap="closeAgreement">
+    <view class="modal" catchtap="noop">
+      <view class="bold" style="margin-bottom:16rpx">{{agreements.type === 'privacy' ? '隐私政策' : '会员服务协议'}}</view>
+      <scroll-view scroll-y style="max-height:60vh"><text class="small" style="white-space:pre-wrap">{{agreements.content}}</text></scroll-view>
+      <button class="btn" style="margin-top:24rpx" bindtap="closeAgreement">我知道了</button>
+    </view>
+  </view>
+</view>

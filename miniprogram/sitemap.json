@@ -1,0 +1,4 @@
+{
+  "desc": "美业大健康会员小程序",
+  "rules": [{ "action": "allow", "page": "*" }]
+}

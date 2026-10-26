@@ -1,0 +1,4 @@
+{
+  "desc": "美业大健康技师小程序",
+  "rules": [{ "action": "allow", "page": "*" }]
+}

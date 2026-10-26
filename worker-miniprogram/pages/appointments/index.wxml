@@ -1,0 +1,29 @@
+<view class="container">
+  <view class="tabs">
+    <view class="tab {{tab === '' ? 'on' : ''}}" data-tab="" bindtap="switchTab">全部</view>
+    <view class="tab {{tab === 'CONFIRMED' ? 'on' : ''}}" data-tab="CONFIRMED" bindtap="switchTab">待到店</view>
+    <view class="tab {{tab === 'SERVING' ? 'on' : ''}}" data-tab="SERVING" bindtap="switchTab">服务中</view>
+    <view class="tab {{tab === 'DONE' ? 'on' : ''}}" data-tab="DONE" bindtap="switchTab">已完成</view>
+  </view>
+  <picker mode="date" value="{{date}}" bindchange="onDate">
+    <view class="picker" style="background:#fff;margin-bottom:20rpx"><text>{{date || '全部日期'}}</text><text>筛选日期 ›</text></view>
+  </picker>
+
+  <view wx:if="{{loading}}" class="loading">加载中…</view>
+  <view wx:elif="{{!list.length}}" class="empty">暂无预约</view>
+  <view class="card" wx:for="{{list}}" wx:key="id">
+    <view class="row between">
+      <view class="bold small">{{item.startTime}} - {{item.endTime}}</view>
+      <view class="pill">{{item.status}}</view>
+    </view>
+    <view class="tiny muted" style="margin-top:5rpx">{{item.appointmentNo}}</view>
+    <view class="tiny" style="margin-top:6rpx">客户 #{{item.customerId}} · 门店 #{{item.storeId}} · 工位 #{{item.workstationId || '-'}}</view>
+    <view class="tiny muted" wx:if="{{item.remark}}" style="margin-top:4rpx">备注：{{item.remark}}</view>
+    <view class="row" style="margin-top:14rpx">
+      <button wx:if="{{item.status === 'PENDING' || item.status === 'CONFIRMED'}}" class="btn sm" data-id="{{item.id}}" data-action="arrive" data-label="确认到店" bindtap="act">确认到店</button>
+      <button wx:if="{{item.status === 'ARRIVED'}}" class="btn sm" data-id="{{item.id}}" data-action="start" data-label="开始服务" bindtap="act">开始服务</button>
+      <button wx:if="{{item.status === 'SERVING'}}" class="btn sm" data-id="{{item.id}}" data-action="done" data-label="完成服务" bindtap="act">完成服务</button>
+      <button class="btn gray sm" data-id="{{item.id}}" bindtap="goLog">填日志</button>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,37 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/items/index",
+    "pages/item/index",
+    "pages/appointment/index",
+    "pages/order/index",
+    "pages/cards/index",
+    "pages/mine/index",
+    "pages/messages/index",
+    "pages/password/index",
+    "pages/agreement/index",
+    "pages/login/index"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#b4235a",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "美业会员",
+    "backgroundColor": "#faf7f9",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#948a98",
+    "selectedColor": "#b4235a",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页" },
+      { "pagePath": "pages/appointment/index", "text": "预约" },
+      { "pagePath": "pages/order/index", "text": "订单" },
+      { "pagePath": "pages/mine/index", "text": "我的" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

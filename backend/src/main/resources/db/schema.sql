@@ -1,0 +1,1061 @@
+-- 美业大健康数字化平台（业务品类插件化）SaaS - 数据库初始化脚本
+-- MySQL 8 / utf8mb4
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+CREATE DATABASE IF NOT EXISTS `meiye` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `meiye`;
+
+-- ============ 平台级表（不参与租户隔离） ============
+CREATE TABLE IF NOT EXISTS `sys_tenant` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(32) NOT NULL COMMENT '租户编码',
+  `name` VARCHAR(100) NOT NULL,
+  `contact` VARCHAR(50) DEFAULT NULL,
+  `phone` VARCHAR(30) DEFAULT NULL,
+  `logo` VARCHAR(255) DEFAULT NULL,
+  `store_limit` INT NOT NULL DEFAULT 1,
+  `customer_limit` INT NOT NULL DEFAULT 1000,
+  `technician_limit` INT NOT NULL DEFAULT 50,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'TRIAL' COMMENT 'TRIAL/NORMAL/DISABLED/EXPIRED',
+  `open_at` DATETIME DEFAULT NULL,
+  `expire_at` DATETIME DEFAULT NULL,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_code` (`code`)
+) ENGINE=InnoDB COMMENT='租户';
+
+CREATE TABLE IF NOT EXISTS `sys_platform_user` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `username` VARCHAR(50) NOT NULL,
+  `password` VARCHAR(100) NOT NULL,
+  `name` VARCHAR(50) NOT NULL,
+  `role` VARCHAR(20) NOT NULL DEFAULT 'OPERATOR' COMMENT 'SYSTEM/OPERATOR',
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `last_login_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_platform_username` (`username`)
+) ENGINE=InnoDB COMMENT='平台用户';
+
+CREATE TABLE IF NOT EXISTS `biz_type_plugin` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(40) NOT NULL COMMENT 'biz_type',
+  `name` VARCHAR(50) NOT NULL,
+  `icon` VARCHAR(100) DEFAULT NULL,
+  `default_enabled` TINYINT NOT NULL DEFAULT 0,
+  `medical` TINYINT NOT NULL DEFAULT 0 COMMENT '是否医疗类目',
+  `sub_modules` VARCHAR(500) DEFAULT NULL COMMENT '可选子模块 JSON',
+  `field_template` TEXT COMMENT '字段模板 JSON(岗位/工位/项目分类/时段粒度)',
+  `default_commission` TEXT COMMENT '默认提成规则 JSON',
+  `sort` INT DEFAULT 0,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_biz_code` (`code`)
+) ENGINE=InnoDB COMMENT='品类插件库';
+
+CREATE TABLE IF NOT EXISTS `sys_global_dict` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `dict_type` VARCHAR(50) NOT NULL COMMENT '项目分类/技师岗位/工位类型/会员等级/状态',
+  `label` VARCHAR(100) NOT NULL,
+  `value` VARCHAR(100) NOT NULL,
+  `sort` INT DEFAULT 0,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_dict_type` (`dict_type`)
+) ENGINE=InnoDB COMMENT='全局标准字典';
+
+CREATE TABLE IF NOT EXISTS `platform_param` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `param_key` VARCHAR(80) NOT NULL,
+  `param_value` VARCHAR(500) NOT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `remark` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_param_key` (`param_key`)
+) ENGINE=InnoDB COMMENT='平台参数';
+
+CREATE TABLE IF NOT EXISTS `sys_language` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(10) NOT NULL,
+  `name` VARCHAR(50) NOT NULL,
+  `enabled` TINYINT NOT NULL DEFAULT 1,
+  `is_default` TINYINT NOT NULL DEFAULT 0,
+  `sort` INT DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lang_code` (`code`)
+) ENGINE=InnoDB COMMENT='语言';
+
+-- ============ 租户级系统表 ============
+CREATE TABLE IF NOT EXISTS `tenant_biz_type` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `biz_type` VARCHAR(40) NOT NULL,
+  `enabled` TINYINT NOT NULL DEFAULT 1,
+  `enabled_at` DATETIME DEFAULT NULL,
+  `inventory_enabled` TINYINT NOT NULL DEFAULT 0,
+  `commission_override` TEXT,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_biz` (`tenant_id`,`biz_type`)
+) ENGINE=InnoDB COMMENT='租户品类启用';
+
+CREATE TABLE IF NOT EXISTS `tenant_config` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `name` VARCHAR(100) DEFAULT NULL,
+  `logo` VARCHAR(255) DEFAULT NULL,
+  `service_phone` VARCHAR(30) DEFAULT NULL,
+  `config_json` LONGTEXT,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tc_tenant` (`tenant_id`)
+) ENGINE=InnoDB COMMENT='租户配置';
+
+CREATE TABLE IF NOT EXISTS `tenant_dict` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `dict_type` VARCHAR(50) NOT NULL,
+  `label` VARCHAR(100) NOT NULL,
+  `value` VARCHAR(100) NOT NULL,
+  `sort` INT DEFAULT 0,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_td_tenant_type` (`tenant_id`,`dict_type`)
+) ENGINE=InnoDB COMMENT='租户自定义字典';
+
+CREATE TABLE IF NOT EXISTS `sys_role` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL DEFAULT 0,
+  `code` VARCHAR(40) NOT NULL,
+  `name` VARCHAR(50) NOT NULL,
+  `permissions` TEXT COMMENT '模块权限 JSON',
+  `platform` TINYINT NOT NULL DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_role_tenant` (`tenant_id`)
+) ENGINE=InnoDB COMMENT='角色';
+
+CREATE TABLE IF NOT EXISTS `sys_tenant_user` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `username` VARCHAR(50) NOT NULL,
+  `password` VARCHAR(100) NOT NULL,
+  `name` VARCHAR(50) NOT NULL,
+  `phone` VARCHAR(100) DEFAULT NULL,
+  `role_code` VARCHAR(40) NOT NULL DEFAULT 'STAFF',
+  `store_id` BIGINT DEFAULT NULL,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `last_login_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_user` (`tenant_id`,`username`),
+  KEY `idx_tu_tenant` (`tenant_id`)
+) ENGINE=InnoDB COMMENT='租户用户';
+
+CREATE TABLE IF NOT EXISTS `sys_user_role` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL DEFAULT 0,
+  `user_id` BIGINT NOT NULL,
+  `role_id` BIGINT NOT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_ur_user` (`user_id`)
+) ENGINE=InnoDB COMMENT='用户角色关联';
+
+CREATE TABLE IF NOT EXISTS `audit_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL DEFAULT 0,
+  `operator_id` BIGINT DEFAULT NULL,
+  `operator_name` VARCHAR(50) DEFAULT NULL,
+  `user_type` VARCHAR(20) DEFAULT NULL,
+  `module` VARCHAR(50) DEFAULT NULL,
+  `action` VARCHAR(100) DEFAULT NULL,
+  `target` VARCHAR(100) DEFAULT NULL,
+  `detail` TEXT,
+  `ip` VARCHAR(64) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_audit_tenant` (`tenant_id`,`created_at`)
+) ENGINE=InnoDB COMMENT='审计日志';
+
+CREATE TABLE IF NOT EXISTS `sys_attachment` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL DEFAULT 0,
+  `biz_type` VARCHAR(50) DEFAULT NULL,
+  `biz_id` BIGINT DEFAULT NULL,
+  `name` VARCHAR(200) DEFAULT NULL,
+  `url` VARCHAR(500) DEFAULT NULL,
+  `size` BIGINT DEFAULT 0,
+  `mime` VARCHAR(100) DEFAULT NULL,
+  `storage_driver` VARCHAR(20) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_attach_tenant` (`tenant_id`,`biz_type`)
+) ENGINE=InnoDB COMMENT='附件';
+
+CREATE TABLE IF NOT EXISTS `storage_config` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL DEFAULT 0,
+  `driver` VARCHAR(20) NOT NULL DEFAULT 'LOCAL' COMMENT 'LOCAL/S3/OSS/COS/MINIO',
+  `config_json` TEXT COMMENT '密钥AES加密后的配置',
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `tested_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_storage_tenant` (`tenant_id`)
+) ENGINE=InnoDB COMMENT='对象存储配置';
+
+CREATE TABLE IF NOT EXISTS `wechat_config` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `mini_app_id` VARCHAR(64) DEFAULT NULL,
+  `mini_secret` VARCHAR(500) DEFAULT NULL,
+  `mp_app_id` VARCHAR(64) DEFAULT NULL,
+  `mp_secret` VARCHAR(500) DEFAULT NULL,
+  `mp_token` VARCHAR(100) DEFAULT NULL,
+  `mp_aes_key` VARCHAR(500) DEFAULT NULL,
+  `mp_url` VARCHAR(255) DEFAULT NULL,
+  `union_app_id` VARCHAR(64) DEFAULT NULL,
+  `app_app_id` VARCHAR(64) DEFAULT NULL,
+  `app_secret` VARCHAR(500) DEFAULT NULL,
+  `subscribe_ids` VARCHAR(500) DEFAULT NULL,
+  `push_channel` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_wx_tenant` (`tenant_id`)
+) ENGINE=InnoDB COMMENT='微信/App配置';
+
+CREATE TABLE IF NOT EXISTS `message_template` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `code` VARCHAR(50) NOT NULL COMMENT 'APPOINTMENT_CONFIRM/APPOINTMENT_REMIND/VERIFY/STORED/EXPIRY/FOLLOWUP',
+  `name` VARCHAR(100) NOT NULL,
+  `template_id` VARCHAR(100) DEFAULT NULL,
+  `channel` VARCHAR(30) DEFAULT 'WECHAT_MP',
+  `fields_json` TEXT,
+  `enabled` TINYINT NOT NULL DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_msg_tpl` (`tenant_id`,`code`)
+) ENGINE=InnoDB COMMENT='消息模板';
+
+CREATE TABLE IF NOT EXISTS `message_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `customer_id` BIGINT DEFAULT NULL,
+  `channel` VARCHAR(30) DEFAULT NULL,
+  `code` VARCHAR(50) DEFAULT NULL,
+  `title` VARCHAR(200) DEFAULT NULL,
+  `content` TEXT,
+  `status` VARCHAR(20) DEFAULT 'SENT',
+  `error` VARCHAR(500) DEFAULT NULL,
+  `sent_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_msg_tenant` (`tenant_id`,`customer_id`)
+) ENGINE=InnoDB COMMENT='消息发送日志/站内消息';
+
+CREATE TABLE IF NOT EXISTS `sys_menu_config` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL DEFAULT 0,
+  `target` VARCHAR(20) NOT NULL COMMENT 'ADMIN/MINIAPP/H5/WECHAT',
+  `content` LONGTEXT,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_menu_tenant_target` (`tenant_id`,`target`)
+) ENGINE=InnoDB COMMENT='菜单可视化配置';
+
+-- ============ 主数据 ============
+CREATE TABLE IF NOT EXISTS `t_store` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `code` VARCHAR(30) DEFAULT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `phone` VARCHAR(30) DEFAULT NULL,
+  `address` VARCHAR(255) DEFAULT NULL,
+  `service_scope` VARCHAR(255) DEFAULT NULL,
+  `manager` VARCHAR(50) DEFAULT NULL,
+  `biz_types` VARCHAR(255) DEFAULT NULL,
+  `allow_cross_store` TINYINT NOT NULL DEFAULT 1,
+  `allow_share_profit` TINYINT NOT NULL DEFAULT 0,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `description` TEXT,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_store_tenant` (`tenant_id`)
+) ENGINE=InnoDB COMMENT='门店';
+
+CREATE TABLE IF NOT EXISTS `t_workstation` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `store_id` BIGINT NOT NULL,
+  `name` VARCHAR(50) NOT NULL,
+  `biz_type` VARCHAR(40) NOT NULL,
+  `type` VARCHAR(20) NOT NULL DEFAULT 'BED' COMMENT 'BED/ROOM/SEAT',
+  `status` VARCHAR(20) NOT NULL DEFAULT 'FREE' COMMENT 'FREE/OCCUPIED/MAINTAIN',
+  `remark` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_ws_tenant` (`tenant_id`,`store_id`)
+) ENGINE=InnoDB COMMENT='工位/房间/床位';
+
+CREATE TABLE IF NOT EXISTS `t_customer` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `customer_no` VARCHAR(40) DEFAULT NULL,
+  `name` VARCHAR(50) NOT NULL,
+  `phone` VARCHAR(255) DEFAULT NULL COMMENT 'AES加密',
+  `id_card` VARCHAR(255) DEFAULT NULL COMMENT 'AES加密',
+  `password` VARCHAR(100) DEFAULT NULL,
+  `union_id` VARCHAR(64) DEFAULT NULL,
+  `store_id` BIGINT DEFAULT NULL,
+  `level` VARCHAR(30) DEFAULT '普通会员',
+  `growth` INT NOT NULL DEFAULT 0,
+  `points` INT NOT NULL DEFAULT 0,
+  `tags` VARCHAR(255) DEFAULT NULL,
+  `follower_id` BIGINT DEFAULT NULL,
+  `debt` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `total_consume` DECIMAL(14,2) NOT NULL DEFAULT 0,
+  `total_recharge` DECIMAL(14,2) NOT NULL DEFAULT 0,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `gender` VARCHAR(10) DEFAULT NULL,
+  `birthday` DATE DEFAULT NULL,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `last_visit_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_customer_no` (`tenant_id`,`customer_no`),
+  KEY `idx_customer_phone` (`tenant_id`,`phone`),
+  KEY `idx_customer_union` (`union_id`)
+) ENGINE=InnoDB COMMENT='客户档案';
+
+CREATE TABLE IF NOT EXISTS `t_technician` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `tech_no` VARCHAR(40) DEFAULT NULL,
+  `name` VARCHAR(50) NOT NULL,
+  `phone` VARCHAR(255) DEFAULT NULL,
+  `id_card` VARCHAR(255) DEFAULT NULL,
+  `password` VARCHAR(100) DEFAULT NULL,
+  `user_id` BIGINT DEFAULT NULL,
+  `store_id` BIGINT DEFAULT NULL,
+  `position` VARCHAR(50) DEFAULT NULL,
+  `skills` VARCHAR(255) DEFAULT NULL,
+  `cert_status` VARCHAR(20) NOT NULL DEFAULT 'OK' COMMENT 'OK/WARN/EXPIRED',
+  `rotation_status` VARCHAR(20) NOT NULL DEFAULT 'IDLE' COMMENT 'IDLE/SERVING/REST',
+  `rotation_seq` INT DEFAULT 0,
+  `rating` DECIMAL(3,2) NOT NULL DEFAULT 5.00,
+  `service_count` INT NOT NULL DEFAULT 0,
+  `total_revenue` DECIMAL(14,2) NOT NULL DEFAULT 0,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `avatar` VARCHAR(255) DEFAULT NULL,
+  `entry_at` DATE DEFAULT NULL,
+  `bio` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tech_no` (`tenant_id`,`tech_no`),
+  KEY `idx_tech_tenant` (`tenant_id`,`store_id`)
+) ENGINE=InnoDB COMMENT='技师档案';
+
+CREATE TABLE IF NOT EXISTS `t_technician_cert` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `technician_id` BIGINT NOT NULL,
+  `cert_type` VARCHAR(50) NOT NULL,
+  `cert_no` VARCHAR(80) DEFAULT NULL,
+  `issuer` VARCHAR(100) DEFAULT NULL,
+  `expire_at` DATE DEFAULT NULL,
+  `file_url` VARCHAR(500) DEFAULT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'VALID',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_cert_tenant` (`tenant_id`,`technician_id`)
+) ENGINE=InnoDB COMMENT='技师证书';
+
+-- ============ 项目/套餐 ============
+CREATE TABLE IF NOT EXISTS `t_service_item` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `biz_type` VARCHAR(40) NOT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `category` VARCHAR(50) DEFAULT NULL,
+  `duration` INT NOT NULL DEFAULT 60,
+  `price` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `member_price` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `commission_rate` DECIMAL(5,2) NOT NULL DEFAULT 0,
+  `store_ids` VARCHAR(255) DEFAULT NULL,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `image` VARCHAR(500) DEFAULT NULL,
+  `description` TEXT,
+  `ext_json` TEXT,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_item_tenant` (`tenant_id`,`biz_type`)
+) ENGINE=InnoDB COMMENT='服务项目';
+
+CREATE TABLE IF NOT EXISTS `t_service_package` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `biz_type` VARCHAR(40) NOT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `type` VARCHAR(20) NOT NULL DEFAULT 'COUNT' COMMENT 'COUNT/FREE/GENERAL/PERIOD/COMBO',
+  `price` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `face_value` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `times` INT NOT NULL DEFAULT 1,
+  `valid_days` INT NOT NULL DEFAULT 365,
+  `items_json` TEXT,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `description` TEXT,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_pkg_tenant` (`tenant_id`,`biz_type`)
+) ENGINE=InnoDB COMMENT='套餐/组合礼包';
+
+CREATE TABLE IF NOT EXISTS `t_service_flow_template` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `biz_type` VARCHAR(40) DEFAULT NULL,
+  `item_id` BIGINT DEFAULT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `steps_json` TEXT,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_flow_tenant` (`tenant_id`)
+) ENGINE=InnoDB COMMENT='标准服务流程模板';
+
+-- ============ 预约排班 ============
+CREATE TABLE IF NOT EXISTS `t_appointment` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `appointment_no` VARCHAR(40) NOT NULL,
+  `biz_type` VARCHAR(40) NOT NULL,
+  `customer_id` BIGINT NOT NULL,
+  `store_id` BIGINT NOT NULL,
+  `technician_id` BIGINT DEFAULT NULL,
+  `item_id` BIGINT DEFAULT NULL,
+  `package_id` BIGINT DEFAULT NULL,
+  `workstation_id` BIGINT DEFAULT NULL,
+  `start_time` DATETIME NOT NULL,
+  `end_time` DATETIME NOT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/CONFIRMED/ARRIVED/SERVING/DONE/CANCELLED/NO_SHOW',
+  `source` VARCHAR(20) DEFAULT 'STAFF' COMMENT 'MINI/H5/APP/WECHAT/STAFF',
+  `amount` DECIMAL(12,2) DEFAULT 0,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `created_by` BIGINT DEFAULT NULL,
+  `released` TINYINT NOT NULL DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_appt_no` (`tenant_id`,`appointment_no`),
+  KEY `idx_appt_tenant_time` (`tenant_id`,`store_id`,`start_time`),
+  KEY `idx_appt_tech` (`technician_id`,`start_time`)
+) ENGINE=InnoDB COMMENT='预约';
+
+CREATE TABLE IF NOT EXISTS `t_schedule` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `store_id` BIGINT NOT NULL,
+  `technician_id` BIGINT NOT NULL,
+  `work_date` DATE NOT NULL,
+  `start_time` TIME NOT NULL,
+  `end_time` TIME NOT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'WORK' COMMENT 'WORK/LEAVE/OFF',
+  `biz_type` VARCHAR(40) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_sch_tenant` (`tenant_id`,`work_date`,`store_id`)
+) ENGINE=InnoDB COMMENT='技师排班';
+
+CREATE TABLE IF NOT EXISTS `t_tech_rotation` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `store_id` BIGINT NOT NULL,
+  `technician_id` BIGINT NOT NULL,
+  `biz_type` VARCHAR(40) DEFAULT NULL,
+  `rotation_date` DATE NOT NULL,
+  `seq` INT NOT NULL DEFAULT 0,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'WAITING' COMMENT 'WAITING/SERVING/DONE',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_rot_tenant` (`tenant_id`,`rotation_date`,`store_id`)
+) ENGINE=InnoDB COMMENT='技师轮牌';
+
+CREATE TABLE IF NOT EXISTS `t_appointment_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `appointment_id` BIGINT NOT NULL,
+  `action` VARCHAR(30) NOT NULL,
+  `before_json` TEXT,
+  `after_json` TEXT,
+  `operator` VARCHAR(50) DEFAULT NULL,
+  `remark` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_apptlog` (`appointment_id`)
+) ENGINE=InnoDB COMMENT='预约变更记录';
+
+-- ============ 收银订单 ============
+CREATE TABLE IF NOT EXISTS `t_order` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `order_no` VARCHAR(40) NOT NULL,
+  `biz_type` VARCHAR(40) NOT NULL,
+  `customer_id` BIGINT NOT NULL,
+  `store_id` BIGINT NOT NULL,
+  `technician_id` BIGINT DEFAULT NULL,
+  `appointment_id` BIGINT DEFAULT NULL,
+  `total_amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `discount_amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `paid_amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `pay_type` VARCHAR(20) DEFAULT NULL COMMENT 'WECHAT/ALIPAY/HUABEI/UNION/CASH/BALANCE/CARD',
+  `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/PAID/VERIFIED/DONE/AFTER_SALE/CANCELLED',
+  `cashier_id` BIGINT DEFAULT NULL,
+  `paid_at` DATETIME DEFAULT NULL,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_order_no` (`tenant_id`,`order_no`),
+  KEY `idx_order_tenant` (`tenant_id`,`store_id`,`created_at`),
+  KEY `idx_order_customer` (`customer_id`)
+) ENGINE=InnoDB COMMENT='订单';
+
+CREATE TABLE IF NOT EXISTS `t_order_item` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `order_id` BIGINT NOT NULL,
+  `item_id` BIGINT DEFAULT NULL,
+  `package_id` BIGINT DEFAULT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `price` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `quantity` INT NOT NULL DEFAULT 1,
+  `amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `technician_id` BIGINT DEFAULT NULL,
+  `commission_rate` DECIMAL(5,2) NOT NULL DEFAULT 0,
+  `commission_amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_oi_order` (`order_id`)
+) ENGINE=InnoDB COMMENT='订单明细';
+
+CREATE TABLE IF NOT EXISTS `t_payment` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `order_id` BIGINT NOT NULL,
+  `pay_no` VARCHAR(50) NOT NULL,
+  `channel` VARCHAR(20) NOT NULL,
+  `amount` DECIMAL(12,2) NOT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',
+  `trade_no` VARCHAR(100) DEFAULT NULL,
+  `paid_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_pay_order` (`order_id`)
+) ENGINE=InnoDB COMMENT='支付流水';
+
+CREATE TABLE IF NOT EXISTS `t_cashier_shift` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `store_id` BIGINT NOT NULL,
+  `cashier_id` BIGINT DEFAULT NULL,
+  `cashier_name` VARCHAR(50) DEFAULT NULL,
+  `start_at` DATETIME NOT NULL,
+  `end_at` DATETIME DEFAULT NULL,
+  `opening_cash` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `closing_cash` DECIMAL(12,2) DEFAULT NULL,
+  `system_amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `diff_amount` DECIMAL(12,2) DEFAULT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'OPEN' COMMENT 'OPEN/CLOSED',
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_shift_tenant` (`tenant_id`,`store_id`)
+) ENGINE=InnoDB COMMENT='交接班';
+
+-- ============ 会员卡/储值/卡券 ============
+CREATE TABLE IF NOT EXISTS `t_card_type` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `biz_type` VARCHAR(40) DEFAULT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `type` VARCHAR(20) NOT NULL COMMENT 'COUNT/TIME/PACKAGE/COMBO/STORED/SUB',
+  `price` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `face_value` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `times` INT NOT NULL DEFAULT 0,
+  `valid_days` INT NOT NULL DEFAULT 365,
+  `bonus` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `discount` DECIMAL(5,2) NOT NULL DEFAULT 100,
+  `commission_rate` DECIMAL(5,2) NOT NULL DEFAULT 0,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `description` TEXT,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_ct_tenant` (`tenant_id`,`biz_type`)
+) ENGINE=InnoDB COMMENT='卡种';
+
+CREATE TABLE IF NOT EXISTS `t_member_card` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `card_no` VARCHAR(40) NOT NULL,
+  `customer_id` BIGINT NOT NULL,
+  `card_type_id` BIGINT NOT NULL,
+  `type` VARCHAR(20) NOT NULL,
+  `name` VARCHAR(100) DEFAULT NULL,
+  `biz_type` VARCHAR(40) DEFAULT NULL,
+  `store_id` BIGINT DEFAULT NULL,
+  `balance` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `times` INT NOT NULL DEFAULT 0,
+  `total_times` INT NOT NULL DEFAULT 0,
+  `expire_at` DATETIME DEFAULT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE/EXPIRED/USED/FROZEN',
+  `parent_id` BIGINT DEFAULT NULL,
+  `discount` DECIMAL(5,2) NOT NULL DEFAULT 100,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_card_no` (`tenant_id`,`card_no`),
+  KEY `idx_card_customer` (`customer_id`)
+) ENGINE=InnoDB COMMENT='会员卡';
+
+CREATE TABLE IF NOT EXISTS `t_card_flow` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `card_id` BIGINT NOT NULL,
+  `customer_id` BIGINT NOT NULL,
+  `type` VARCHAR(20) NOT NULL COMMENT 'OPEN/RECHARGE/CONSUME/REFUND/EXPIRE',
+  `amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `times` INT NOT NULL DEFAULT 0,
+  `balance_after` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `times_after` INT NOT NULL DEFAULT 0,
+  `order_id` BIGINT DEFAULT NULL,
+  `remark` VARCHAR(255) DEFAULT NULL,
+  `operator` VARCHAR(50) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_cf_card` (`card_id`),
+  KEY `idx_cf_customer` (`customer_id`)
+) ENGINE=InnoDB COMMENT='卡流水';
+
+CREATE TABLE IF NOT EXISTS `t_coupon` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `customer_id` BIGINT DEFAULT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `type` VARCHAR(20) NOT NULL COMMENT 'CASH/DISCOUNT',
+  `amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `discount` DECIMAL(5,2) NOT NULL DEFAULT 100,
+  `min_amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `start_at` DATETIME DEFAULT NULL,
+  `expire_at` DATETIME DEFAULT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'UNUSED' COMMENT 'UNUSED/USED/EXPIRED',
+  `source` VARCHAR(50) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_coupon_tenant` (`tenant_id`,`customer_id`)
+) ENGINE=InnoDB COMMENT='优惠券';
+
+CREATE TABLE IF NOT EXISTS `t_debt` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `customer_id` BIGINT NOT NULL,
+  `order_id` BIGINT DEFAULT NULL,
+  `amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `paid_amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'UNPAID' COMMENT 'UNPAID/PARTIAL/PAID',
+  `remark` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_debt_customer` (`customer_id`)
+) ENGINE=InnoDB COMMENT='欠款';
+
+-- ============ 提成结算 ============
+CREATE TABLE IF NOT EXISTS `t_commission_rule` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `biz_type` VARCHAR(40) DEFAULT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `technician_level` VARCHAR(50) DEFAULT NULL,
+  `min_amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `max_amount` DECIMAL(12,2) DEFAULT NULL,
+  `rate` DECIMAL(5,2) NOT NULL DEFAULT 0,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_cr_tenant` (`tenant_id`,`biz_type`)
+) ENGINE=InnoDB COMMENT='提成规则';
+
+CREATE TABLE IF NOT EXISTS `t_settlement` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `settlement_no` VARCHAR(40) NOT NULL,
+  `period_type` VARCHAR(10) NOT NULL DEFAULT 'MONTH' COMMENT 'WEEK/MONTH',
+  `start_date` DATE NOT NULL,
+  `end_date` DATE NOT NULL,
+  `store_id` BIGINT DEFAULT NULL,
+  `revenue` DECIMAL(14,2) NOT NULL DEFAULT 0,
+  `tech_commission` DECIMAL(14,2) NOT NULL DEFAULT 0,
+  `platform_share` DECIMAL(14,2) NOT NULL DEFAULT 0,
+  `store_share` DECIMAL(14,2) NOT NULL DEFAULT 0,
+  `dividend` DECIMAL(14,2) NOT NULL DEFAULT 0,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/CONFIRMED/PAID',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_settle_no` (`tenant_id`,`settlement_no`),
+  KEY `idx_settle_tenant` (`tenant_id`,`start_date`)
+) ENGINE=InnoDB COMMENT='结算单';
+
+CREATE TABLE IF NOT EXISTS `t_settlement_item` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `settlement_id` BIGINT NOT NULL,
+  `technician_id` BIGINT NOT NULL,
+  `order_id` BIGINT DEFAULT NULL,
+  `revenue` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `rate` DECIMAL(5,2) NOT NULL DEFAULT 0,
+  `commission_amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_si_settle` (`settlement_id`),
+  KEY `idx_si_tech` (`technician_id`)
+) ENGINE=InnoDB COMMENT='结算明细';
+
+CREATE TABLE IF NOT EXISTS `t_withdrawal` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `tech_id` BIGINT NOT NULL,
+  `amount` DECIMAL(12,2) NOT NULL,
+  `fee` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `actual_amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'APPLIED' COMMENT 'APPLIED/APPROVED/PAID/REJECTED',
+  `remark` VARCHAR(255) DEFAULT NULL,
+  `reviewed_by` BIGINT DEFAULT NULL,
+  `paid_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_wd_tenant` (`tenant_id`,`tech_id`)
+) ENGINE=InnoDB COMMENT='提现';
+
+CREATE TABLE IF NOT EXISTS `t_distribution` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `customer_id` BIGINT NOT NULL,
+  `parent_customer_id` BIGINT DEFAULT NULL,
+  `order_id` BIGINT DEFAULT NULL,
+  `level` INT NOT NULL DEFAULT 1,
+  `amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `rate` DECIMAL(5,2) NOT NULL DEFAULT 0,
+  `commission` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_dist_tenant` (`tenant_id`,`customer_id`)
+) ENGINE=InnoDB COMMENT='分销佣金';
+
+CREATE TABLE IF NOT EXISTS `t_point_record` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `customer_id` BIGINT NOT NULL,
+  `points` INT NOT NULL DEFAULT 0,
+  `type` VARCHAR(20) NOT NULL COMMENT 'EARN/USE',
+  `order_id` BIGINT DEFAULT NULL,
+  `remark` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_pr_customer` (`customer_id`)
+) ENGINE=InnoDB COMMENT='积分流水';
+
+-- ============ 营销/评价/回访/售后/库存 ============
+CREATE TABLE IF NOT EXISTS `t_marketing_activity` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `biz_type` VARCHAR(40) DEFAULT NULL,
+  `type` VARCHAR(20) NOT NULL COMMENT 'GROUP/BARGAIN/FLASH/DISTRIBUTION',
+  `name` VARCHAR(100) NOT NULL,
+  `price` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `origin_price` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `start_at` DATETIME DEFAULT NULL,
+  `end_at` DATETIME DEFAULT NULL,
+  `config_json` TEXT,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_mkt_tenant` (`tenant_id`,`type`)
+) ENGINE=InnoDB COMMENT='营销活动(团购/砍价/秒杀)';
+
+CREATE TABLE IF NOT EXISTS `t_review` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `customer_id` BIGINT NOT NULL,
+  `order_id` BIGINT DEFAULT NULL,
+  `technician_id` BIGINT DEFAULT NULL,
+  `score` INT NOT NULL DEFAULT 5,
+  `tags` VARCHAR(255) DEFAULT NULL,
+  `content` VARCHAR(1000) DEFAULT NULL,
+  `images` VARCHAR(1000) DEFAULT NULL,
+  `reply` VARCHAR(1000) DEFAULT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'PUBLISHED',
+  `replied_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_review_tenant` (`tenant_id`,`technician_id`)
+) ENGINE=InnoDB COMMENT='评价';
+
+CREATE TABLE IF NOT EXISTS `t_follow_up` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `customer_id` BIGINT NOT NULL,
+  `order_id` BIGINT DEFAULT NULL,
+  `type` VARCHAR(30) NOT NULL DEFAULT 'CONSUME',
+  `due_at` DATETIME DEFAULT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/DONE/CANCELLED',
+  `content` VARCHAR(500) DEFAULT NULL,
+  `result` VARCHAR(500) DEFAULT NULL,
+  `handler_id` BIGINT DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_fu_tenant` (`tenant_id`,`status`)
+) ENGINE=InnoDB COMMENT='回访任务';
+
+CREATE TABLE IF NOT EXISTS `t_after_sale` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `order_id` BIGINT DEFAULT NULL,
+  `customer_id` BIGINT NOT NULL,
+  `type` VARCHAR(20) NOT NULL COMMENT 'RERUN/REFUND/COMPLAINT',
+  `reason` VARCHAR(500) DEFAULT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/PROCESSING/DONE/CLOSED',
+  `result` VARCHAR(500) DEFAULT NULL,
+  `handle_by` BIGINT DEFAULT NULL,
+  `compensation` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_as_tenant` (`tenant_id`,`status`)
+) ENGINE=InnoDB COMMENT='售后/返工';
+
+CREATE TABLE IF NOT EXISTS `t_tech_service_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `technician_id` BIGINT NOT NULL,
+  `appointment_id` BIGINT DEFAULT NULL,
+  `order_id` BIGINT DEFAULT NULL,
+  `customer_id` BIGINT DEFAULT NULL,
+  `content` VARCHAR(1000) DEFAULT NULL,
+  `images` VARCHAR(1000) DEFAULT NULL,
+  `duration` INT DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_sl_tech` (`technician_id`)
+) ENGINE=InnoDB COMMENT='技师服务日志';
+
+CREATE TABLE IF NOT EXISTS `t_inventory_item` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `store_id` BIGINT DEFAULT NULL,
+  `biz_type` VARCHAR(40) DEFAULT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `sku` VARCHAR(50) DEFAULT NULL,
+  `unit` VARCHAR(20) DEFAULT '件',
+  `stock` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `cost_price` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `warn_stock` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_inv_tenant` (`tenant_id`,`biz_type`)
+) ENGINE=InnoDB COMMENT='耗材/产品';
+
+CREATE TABLE IF NOT EXISTS `t_stock_flow` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `item_id` BIGINT NOT NULL,
+  `type` VARCHAR(20) NOT NULL COMMENT 'IN/OUT/USE/ADJUST',
+  `quantity` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `cost` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `order_id` BIGINT DEFAULT NULL,
+  `operator` VARCHAR(50) DEFAULT NULL,
+  `remark` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_sf_item` (`item_id`)
+) ENGINE=InnoDB COMMENT='库存流水';
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============ 门户 CMS / 微信内容运营 ============
+CREATE TABLE IF NOT EXISTS `cms_article` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL DEFAULT 0,
+  `type` VARCHAR(20) NOT NULL DEFAULT 'NEWS' COMMENT 'NEWS/NOTICE/PAGE',
+  `title` VARCHAR(200) NOT NULL,
+  `title_en` VARCHAR(200) DEFAULT NULL,
+  `summary` VARCHAR(500) DEFAULT NULL,
+  `content` LONGTEXT,
+  `content_en` LONGTEXT,
+  `cover` VARCHAR(500) DEFAULT NULL,
+  `lang` VARCHAR(10) NOT NULL DEFAULT 'zh-CN',
+  `seo_keywords` VARCHAR(300) DEFAULT NULL,
+  `seo_description` VARCHAR(500) DEFAULT NULL,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `sort` INT NOT NULL DEFAULT 0,
+  `published_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_article_tenant` (`tenant_id`,`type`,`status`)
+) ENGINE=InnoDB COMMENT='门户资讯/公告/页面';
+
+CREATE TABLE IF NOT EXISTS `wechat_material` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `type` VARCHAR(20) NOT NULL DEFAULT 'NEWS' COMMENT 'NEWS/IMAGE/VIDEO',
+  `title` VARCHAR(200) NOT NULL,
+  `content` LONGTEXT,
+  `media_id` VARCHAR(200) DEFAULT NULL,
+  `url` VARCHAR(500) DEFAULT NULL,
+  `status` TINYINT NOT NULL DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_wm_tenant` (`tenant_id`)
+) ENGINE=InnoDB COMMENT='公众号图文素材';
+
+CREATE TABLE IF NOT EXISTS `wechat_tag` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `name` VARCHAR(50) NOT NULL,
+  `fan_count` INT NOT NULL DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_wt_tenant` (`tenant_id`)
+) ENGINE=InnoDB COMMENT='公众号粉丝标签';
+
+CREATE TABLE IF NOT EXISTS `wechat_fan` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tenant_id` BIGINT NOT NULL,
+  `openid` VARCHAR(64) NOT NULL,
+  `union_id` VARCHAR(64) DEFAULT NULL,
+  `nickname` VARCHAR(100) DEFAULT NULL,
+  `avatar` VARCHAR(500) DEFAULT NULL,
+  `tags` VARCHAR(255) DEFAULT NULL,
+  `subscribed` TINYINT NOT NULL DEFAULT 1,
+  `subscribed_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_fan_openid` (`tenant_id`,`openid`)
+) ENGINE=InnoDB COMMENT='公众号粉丝';
